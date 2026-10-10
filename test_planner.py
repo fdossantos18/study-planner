@@ -6,7 +6,7 @@ class PlannerTests(unittest.TestCase):
     
     def test_rename_preserves_other_fields(self):
         tasks = [
-            {"id": 7, "title": "Practice graphs", "completed": True},
+            {"id": 7, "title": "Practce graphs", "completed": True},
         ]
 
         result = rename_task(tasks, 7, "Practice graphs")
@@ -14,7 +14,7 @@ class PlannerTests(unittest.TestCase):
         self.assertTrue(result)
         self.assertEqual(
             tasks[0],
-            {"id": 7, "title": "Practce graphs", "completed": True},
+            {"id": 7, "title": "Practice graphs", "completed": True},
         )
 
 
