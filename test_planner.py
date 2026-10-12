@@ -1,6 +1,6 @@
 import unittest
 
-from planner import rename_task, set_task_completed
+from planner import rename_task, set_task_completed, filter_tasks, search_tasks
 
 class PlannerTests(unittest.TestCase):
     
@@ -45,6 +45,21 @@ class PlannerTests(unittest.TestCase):
             [{"id": 7, "title": "Practice graphs", "completed": True}]
         )
 
+
+    def test_search_within_pending_tasks(self):
+        tasks = [
+            {"id": 1, "title": "Practice graphs", "completed": False},
+            {"id": 2, "title": "Review graphs", "completed": True},
+            {"id": 3, "title": "Binary search", "completed": False},
+        ]
+
+        pending_tasks = filter_tasks(tasks, False)
+        results = search_tasks(pending_tasks, " GRAPH ")
+
+        self.assertEqual(
+            results,
+            [{"id": 1, "title": "Practice graphs", "completed": False}] 
+        )
 
 # Run it from terminal below: python -m unittest -v
 
