@@ -71,6 +71,7 @@ def search_tasks(tasks, query):
 
     return matches 
 
+
 def rename_task(tasks, task_id, new_title):
 
     for task in tasks:
@@ -79,6 +80,27 @@ def rename_task(tasks, task_id, new_title):
             return True 
 
     return False 
+
+
+def undo_status_change(tasks, undo_stack):
+    if not undo_stack:
+        return False 
+
+    last_change = undo_stack[-1]
+
+    restored = set_task_completed(
+        tasks, 
+        last_change["task_id"],
+        last_change["previous_completed"],
+    )
+
+    if restored:
+        undo_stack.pop()
+        return True 
+    
+    
+    return False 
+        
 
         
 
