@@ -1,6 +1,6 @@
 import tkinter as tk 
 from tkinter import ttk, simpledialog
-from planner import load_tasks, add_task, save_tasks, complete_task, filter_tasks, search_tasks, set_task_completed, rename_task
+from planner import load_tasks, add_task, save_tasks, complete_task, filter_tasks, search_tasks, set_task_completed, rename_task, undo_status_change
 
 
 def main():
@@ -50,6 +50,7 @@ def main():
     add_button.pack(pady=5)
 
     tasks = load_tasks()
+    undo_stack = []
     visible_tasks = []
     next_task_id = max((task["id"] for task in tasks), default=0) + 1
 
@@ -131,7 +132,17 @@ def main():
         selected_index = selection[0]
         selected_task = visible_tasks[selected_index]
 
+        if selected_task["completed"]:
+            status_label.config(text="Task is already completed.")
+            return 
+
+        change = {
+            "task_id": selected_task["id"],
+            "previous_completed": selected_task["completed"],
+        }
+
         if complete_task(tasks, selected_task["id"]):
+            undo_stack.append(change)
             save_tasks(tasks)
             refresh_task_list()
             status_label.config(text="Task completed!")
@@ -155,7 +166,17 @@ def main():
         selected_index = selection[0]
         selected_task = visible_tasks[selected_index]
 
+        if not selected_task["completed"]:
+            status_label.config(text="Task is already pending.")
+            return 
+
+        change = {
+            "task_id": selected_task["id"],
+            "previous_completed": selected_task["completed"],
+        }
+
         if set_task_completed(tasks, selected_task["id"], False):
+            undo_stack.append(change)
             save_tasks(tasks)
             refresh_task_list()
             status_label.config(text="Task marked pending!")
@@ -208,6 +229,29 @@ def main():
         command=on_rename_task,
     )
     rename_button.pack(pady=5)
+
+
+    def on_undo_status():
+        if not undo_stack:
+            status_label.config(text="No status changes to undo.")
+            return 
+
+        if undo_status_change(tasks, undo_stack):
+            save_tasks(tasks)
+            refresh_task_list()
+            status_label.config(text="Last status change undone.")
+            
+        else:
+            status_label.config(text="Could not find the task to undo.")
+
+
+    # Create Undo button
+    undo_button = ttk.Button(
+        window,
+        text="Undo Status Change",
+        command=on_undo_status,
+    )
+    undo_button.pack(pady=5)
 
 
     refresh_task_list()
