@@ -1,6 +1,6 @@
 import unittest
 
-from planner import rename_task, set_task_completed, filter_tasks, search_tasks, undo_status_change
+from planner import rename_task, set_task_completed, filter_tasks, search_tasks, undo_status_change, get_task_summary
 
 class PlannerTests(unittest.TestCase):
     
@@ -141,6 +141,35 @@ class PlannerTests(unittest.TestCase):
             undo_stack,
             [{"task_id": 7, "previous_completed": False}],
         )
+
+
+    def test_summary_counts_completed_and_pending_tasks(self):
+        tasks = [
+            {"id": 1, "title": "Graphs", "completed": True},
+            {"id": 2, "title": "Sorting", "completed": False},
+            {"id": 3, "title": "Trees", "completed": True},
+        ]
+
+        result = get_task_summary(tasks)
+
+        self.assertEqual(
+            result, 
+            {"total": 3, "completed": 2, "pending": 1},
+        )
+
+
+    def test_summary_of_empty_tasks_returns_zero_counts(self):
+        tasks = []
+
+        result = get_task_summary(tasks)
+
+        self.assertEqual(
+            result,
+            {"total": 0, "completed": 0, "pending": 0},
+
+        )
+
+
 
 
 # Run it from terminal below: python -m unittest -v

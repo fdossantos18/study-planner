@@ -100,6 +100,22 @@ def undo_status_change(tasks, undo_stack):
     
     
     return False 
+
+
+def get_task_summary(tasks):
+    completed_count = 0 
+
+    for task in tasks:
+        status = task["completed"]
+        if status:
+            completed_count += 1
+
+
+    return {
+        "total": len(tasks),
+        "completed": completed_count,
+        "pending": len(tasks) - completed_count,
+    }
         
 
         
