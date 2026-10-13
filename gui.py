@@ -1,6 +1,6 @@
 import tkinter as tk 
 from tkinter import ttk, simpledialog
-from planner import load_tasks, add_task, save_tasks, complete_task, filter_tasks, search_tasks, set_task_completed, rename_task, undo_status_change
+from planner import load_tasks, add_task, save_tasks, complete_task, filter_tasks, search_tasks, set_task_completed, rename_task, undo_status_change, get_task_summary
 
 
 def main():
@@ -15,6 +15,9 @@ def main():
     heading = ttk.Label(window, text="My Study Planner")
     # places that element in the window; pady=20 adds vertical space around it
     heading.pack(pady=20)
+
+    progress_label = ttk.Label(window, text="")
+    progress_label.pack(pady=5)
 
     status_label = ttk.Label(window, text="")
     status_label.pack(pady=5)
@@ -79,6 +82,12 @@ def main():
 
     def refresh_task_list():
         nonlocal visible_tasks
+
+        summary = get_task_summary(tasks)
+
+        progress_label.config(
+            text=f"{summary['completed']} of {summary['total']} tasks completed"
+        )
 
         selected_filter = filter_var.get()
 
