@@ -1,5 +1,6 @@
+import json 
 import tkinter as tk 
-from tkinter import ttk, simpledialog
+from tkinter import ttk, simpledialog, messagebox
 from planner import load_tasks, add_task, save_tasks, complete_task, filter_tasks, search_tasks, set_task_completed, rename_task, undo_status_change, get_task_summary
 
 
@@ -49,10 +50,22 @@ def main():
         text="Add Task",
         command=on_add_task,
     )
-
     add_button.pack(pady=5)
 
-    tasks = load_tasks()
+    try:
+        tasks = load_tasks()
+
+    except json.JSONDecodeError:
+        messagebox.showerror(
+            "Could not load tasks",
+            "The study_tasks.json file contains invalid JSON.\n\n"
+            "Your saved file has not been changed. "
+            "Correct the file before reopening the planner.",
+            parent=window,
+        )
+        window.destroy()
+        return 
+
     undo_stack = []
     visible_tasks = []
     next_task_id = max((task["id"] for task in tasks), default=0) + 1

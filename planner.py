@@ -40,9 +40,9 @@ def save_tasks(tasks):
 
 
 
-def load_tasks():
+def load_tasks(file_path=TASKS_FILE):
     try:
-        with open(TASKS_FILE, "r", encoding="utf-8") as file:
+        with open(file_path, "r", encoding="utf-8") as file:
             return json.load(file)
         
     except FileNotFoundError:

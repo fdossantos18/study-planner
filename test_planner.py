@@ -1,6 +1,10 @@
 import unittest
-
-from planner import rename_task, set_task_completed, filter_tasks, search_tasks, undo_status_change, get_task_summary
+import json 
+import tempfile 
+from pathlib import Path 
+from unittest.mock import patch 
+import gui 
+from planner import rename_task, set_task_completed, filter_tasks, search_tasks, undo_status_change, get_task_summary, load_tasks
 
 class PlannerTests(unittest.TestCase):
     
@@ -168,6 +172,44 @@ class PlannerTests(unittest.TestCase):
             {"total": 0, "completed": 0, "pending": 0},
 
         )
+
+
+    def test_load_tasks_rejects_malformed_json(self):
+        with tempfile.TemporaryDirectory() as directory:
+            file_path = Path(directory) / "tasks.json"
+            malformed_data = '[{"id": 1'
+            file_path.write_text(malformed_data, encoding="utf-8")
+
+            with self.assertRaises(json.JSONDecodeError):
+                load_tasks(file_path)
+
+            self.assertEqual(
+                file_path.read_text(encoding="utf-8"),
+                malformed_data,
+            )
+
+
+    def test_gui_stops_when_saved_json_is_invalid(self):
+        error = json.JSONDecodeError("Invalid JSON", "", 0)
+
+        with (
+            patch("gui.tk.Tk") as mock_tk,
+            patch("gui.load_tasks", side_effect=error),
+            patch("gui.ttk.Label"),
+            patch("gui.ttk.Entry"),
+            patch("gui.ttk.Button"),
+            patch("gui.messagebox.showerror") as mock_showerror,
+            patch("gui.save_tasks") as mock_save,
+        ):
+            window = mock_tk.return_value
+
+            gui.main()
+
+            mock_showerror.assert_called_once()
+            window.destroy.assert_called_once()
+            window.mainloop.assert_not_called()
+            mock_save.assert_not_called()
+
 
 
 
