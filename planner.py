@@ -43,7 +43,9 @@ def save_tasks(tasks):
 def load_tasks(file_path=TASKS_FILE):
     try:
         with open(file_path, "r", encoding="utf-8") as file:
-            return json.load(file)
+            tasks = json.load(file)
+            validate_tasks(tasks)
+            return tasks
         
     except FileNotFoundError:
         return []
@@ -118,7 +120,39 @@ def get_task_summary(tasks):
     }
         
 
-        
+def validate_tasks(tasks):
+    if not isinstance(tasks, list):
+        raise ValueError("Saved tasks must be a list.")
+
+    seen_ids = set()
+
+    for task in tasks:
+        if not isinstance(task, dict):
+            raise ValueError("Each saved task must be a dictionary.")
+
+        for field in ("id", "title", "completed"):
+            if field not in task:
+                raise ValueError(f"Each saved task must include '{field}'.")
+
+
+        if type(task["id"]) is not int or task["id"] <= 0:
+            raise ValueError("Task IDs must be positive integers.")
+
+        if task["id"] in seen_ids:
+            raise ValueError(f"Duplicate task ID: {task['id']}.")
+
+        seen_ids.add(task["id"])
+
+        if not isinstance(task["title"], str):
+            raise ValueError("Task titles must be strings.")
+
+        if not task["title"].strip():
+            raise ValueError("Task titles must not be blank.")
+
+        if type(task["completed"]) is not bool:
+            raise ValueError("Task completion must be True or False.")
+
+    
 
 
 
