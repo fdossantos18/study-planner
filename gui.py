@@ -66,6 +66,18 @@ def main():
         window.destroy()
         return 
 
+
+    except ValueError as error:
+        messagebox.showerror(
+            "Invalid saved tasks",
+            f"The saved task data is invalid:\n{error}\n\n"
+            "Your saved file has not been changed. "
+            "Correct the file before reopening the planner.",
+            parent=window,
+        )
+        window.destroy()
+        return
+
     undo_stack = []
     visible_tasks = []
     next_task_id = max((task["id"] for task in tasks), default=0) + 1

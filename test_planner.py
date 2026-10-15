@@ -1,10 +1,22 @@
 import unittest
-import json 
-import tempfile 
-from pathlib import Path 
-from unittest.mock import patch 
-import gui 
-from planner import rename_task, set_task_completed, filter_tasks, search_tasks, undo_status_change, get_task_summary, load_tasks
+
+import json
+import tempfile
+from pathlib import Path
+from unittest.mock import patch
+
+import gui
+from planner import (
+    rename_task,
+    set_task_completed,
+    filter_tasks,
+    search_tasks,
+    undo_status_change,
+    get_task_summary,
+    load_tasks,
+    validate_tasks,
+)
+
 
 class PlannerTests(unittest.TestCase):
     
@@ -174,6 +186,7 @@ class PlannerTests(unittest.TestCase):
         )
 
 
+
     def test_load_tasks_rejects_malformed_json(self):
         with tempfile.TemporaryDirectory() as directory:
             file_path = Path(directory) / "tasks.json"
@@ -212,6 +225,71 @@ class PlannerTests(unittest.TestCase):
 
 
 
+    def test_validate_tasks_rejects_duplicate_ids(self):
+        tasks = [
+            {"id": 1, "title": "Graphs", "completed": False},
+            {"id": 1, "title": "Sorting", "completed": True},
+        ]
+
+        with self.assertRaisesRegex(ValueError, "Duplicate task ID"):
+            validate_tasks(tasks)
+
+
+
+    def test_validate_tasks_accepts_valid_data(self):
+        tasks = [
+            {"id": 1, "title": "Graphs", "completed": False},
+            {"id": 2, "title": "Sorting", "completed": True},
+        ]
+
+        self.assertIsNone(validate_tasks(tasks))
+
+
+
+    def test_load_tasks_rejects_duplicate_ids_without_changing_file(self):
+        tasks = [
+            {"id": 1, "title": "Graphs", "completed": False},
+            {"id": 1, "title": "Sorting", "completed": True},
+        ]
+
+        with tempfile.TemporaryDirectory() as directory:
+            file_path = Path(directory) / "tasks.json"
+            saved_text = json.dumps(tasks)
+            file_path.write_text(saved_text, encoding="utf-8")
+
+            with self.assertRaisesRegex(ValueError, "Duplicate task ID"):
+                load_tasks(file_path)
+
+            self.assertEqual(
+                file_path.read_text(encoding="utf-8"),
+                saved_text,
+            )
+
+
+
+    def test_gui_stops_when_saved_task_data_is_invalid(self):
+        error = ValueError("Duplicate task ID: 1.")
+
+        with (
+            patch("gui.load_tasks", side_effect=error),
+            patch("gui.tk.Tk") as mock_tk,
+            patch("gui.ttk.Label"),
+            patch("gui.ttk.Entry"),
+            patch("gui.ttk.Button"),
+            patch("gui.messagebox.showerror") as mock_showerror,
+            patch("gui.save_tasks") as mock_save,
+        ):
+            window = mock_tk.return_value
+
+            gui.main()
+
+            mock_showerror.assert_called_once()
+            window.destroy.assert_called_once()
+            window.mainloop.assert_not_called()
+            mock_save.assert_not_called()
+
+            message = mock_showerror.call_args.args[1]
+            self.assertIn("Duplicate task ID: 1.", message)
 
 
 # Run it from terminal below: python -m unittest -v
