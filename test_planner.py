@@ -15,6 +15,7 @@ from planner import (
     get_task_summary,
     load_tasks,
     validate_tasks,
+    sort_tasks_by_title,
 )
 
 
@@ -290,6 +291,22 @@ class PlannerTests(unittest.TestCase):
 
             message = mock_showerror.call_args.args[1]
             self.assertIn("Duplicate task ID: 1.", message)
+
+
+    def test_sort_tasks_by_title_ignores_case_and_preserves_input(self):
+        tasks = [
+            {"id": 1, "title": "Trees", "completed": False},
+            {"id": 2, "title": "arrays", "completed": True},
+            {"id": 3, "title": "Graphs", "completed": False},
+        ]
+
+        result = sort_tasks_by_title(tasks)
+
+        sorted_ids = [task["id"] for task in result]
+        original_ids = [task["id"] for task in tasks]
+
+        self.assertEqual(sorted_ids, [2, 3, 1])
+        self.assertEqual(original_ids, [1, 2, 3])
 
 
 # Run it from terminal below: python -m unittest -v

@@ -152,6 +152,16 @@ def validate_tasks(tasks):
         if type(task["completed"]) is not bool:
             raise ValueError("Task completion must be True or False.")
 
+
+def sort_tasks_by_title(tasks):
+
+    
+    def title_key(task):
+        return task["title"].casefold()
+
+
+    return sorted(tasks, key=title_key) 
+
     
 
 

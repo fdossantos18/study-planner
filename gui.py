@@ -1,8 +1,19 @@
 import json 
 import tkinter as tk 
 from tkinter import ttk, simpledialog, messagebox
-from planner import load_tasks, add_task, save_tasks, complete_task, filter_tasks, search_tasks, set_task_completed, rename_task, undo_status_change, get_task_summary
-
+from planner import (
+    load_tasks, 
+    add_task, 
+    save_tasks, 
+    complete_task,
+    filter_tasks,
+    search_tasks,
+    set_task_completed,
+    rename_task,
+    undo_status_change, 
+    get_task_summary, 
+    sort_tasks_by_title,
+)
 
 def main():
     # creates the new application
@@ -101,6 +112,17 @@ def main():
     search_entry.pack(padx=20, pady=5)
 
 
+    # Sort Dropdown
+    sort_var = tk.StringVar(value="Original order")
+
+    sort_dropdown = ttk.Combobox(
+        window,
+        textvariable=sort_var,
+        values=("Original order", "Title A-Z"),
+        state="readonly",
+    )
+    sort_dropdown.pack(pady=5)
+
     # Listbox
     task_list = tk.Listbox(window, width=60, height=10)
     task_list.pack(padx=20, pady=10, fill="both", expand=True)
@@ -125,6 +147,9 @@ def main():
 
         query = search_entry.get()
         visible_tasks = search_tasks(visible_tasks, query) 
+
+        if sort_var.get() == "Title A-Z":
+            visible_tasks = sort_tasks_by_title(visible_tasks)
 
         task_list.delete(0, tk.END)
 
@@ -286,6 +311,14 @@ def main():
         command=on_undo_status,
     )
     undo_button.pack(pady=5)
+
+
+    def on_sort_changed(event):
+        refresh_task_list()
+    
+    sort_dropdown.bind("<<ComboboxSelected>>", on_sort_changed)
+
+
 
 
     refresh_task_list()
