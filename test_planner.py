@@ -16,6 +16,7 @@ from planner import (
     load_tasks,
     validate_tasks,
     sort_tasks_by_title,
+    save_tasks,
 )
 
 
@@ -293,6 +294,7 @@ class PlannerTests(unittest.TestCase):
             self.assertIn("Duplicate task ID: 1.", message)
 
 
+
     def test_sort_tasks_by_title_ignores_case_and_preserves_input(self):
         tasks = [
             {"id": 1, "title": "Trees", "completed": False},
@@ -307,6 +309,58 @@ class PlannerTests(unittest.TestCase):
 
         self.assertEqual(sorted_ids, [2, 3, 1])
         self.assertEqual(original_ids, [1, 2, 3])
+
+
+
+    def test_save_tasks_replaces_existing_file(self):
+        tasks = [
+            {"id": 1, "title": "Graphs", "completed": False},
+        ]
+
+        with tempfile.TemporaryDirectory() as directory:
+            file_path = Path(directory) / "tasks.json"
+            file_path.write_text("[]", encoding="utf-8")
+
+            save_tasks(tasks, file_path)
+
+            saved_data = json.loads(
+                file_path.read_text(encoding="utf-8")
+            )
+
+            self.assertEqual(saved_data, tasks)
+            self.assertEqual(
+                set(Path(directory).iterdir()),
+                {file_path},
+            )
+
+
+
+    def test_failed_save_preserves_existing_file(self):
+        tasks = [
+            {"id": 1, "title": "Graphs", "completed": False},
+        ]
+
+        def fail_during_write(data, file, **kwargs):
+            file.write('[{"id":')
+            raise OSError("Simulated write failure")
+
+        with tempfile.TemporaryDirectory() as directory:
+            file_path = Path(directory) / "tasks.json"
+            original_text = "[]"
+            file_path.write_text(original_text, encoding="utf-8")
+
+            with patch("planner.json.dump", side_effect=fail_during_write):
+                with self.assertRaises(OSError):
+                    save_tasks(tasks, file_path)
+
+            self.assertEqual(
+                file_path.read_text(encoding="utf-8"),
+                original_text,
+            )
+            self.assertEqual(
+                set(Path(directory).iterdir()),
+                {file_path},
+            )
 
 
 # Run it from terminal below: python -m unittest -v

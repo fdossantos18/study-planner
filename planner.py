@@ -1,5 +1,6 @@
 import json 
 from pathlib import Path 
+import tempfile
 
 TASKS_FILE = Path(__file__).with_name("study_tasks.json")
 
@@ -33,10 +34,29 @@ def set_task_completed(tasks, task_id, completed):
     return False 
 
 
+def save_tasks(tasks, file_path=TASKS_FILE):
+    file_path = Path(file_path)
+    temporary_path = None 
 
-def save_tasks(tasks):
-    with open(TASKS_FILE, "w", encoding="utf-8") as file:
-        json.dump(tasks, file, indent=4)
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            encoding="utf-8",
+            dir=file_path.parent,
+            prefix=f".{file_path.name}.",
+            suffix=".tmp",
+            delete=False,
+        ) as file:
+            temporary_path = Path(file.name)
+            json.dump(tasks, file, indent=4)
+
+        temporary_path.replace(file_path)
+
+    finally:
+        if temporary_path is not None:
+            temporary_path.unlink(missing_ok=True)
+
+
 
 
 
