@@ -210,6 +210,7 @@ class PlannerTests(unittest.TestCase):
         with (
             patch("gui.tk.Tk") as mock_tk,
             patch("gui.load_tasks", side_effect=error),
+            patch("gui.ttk.Frame"), 
             patch("gui.ttk.Label"),
             patch("gui.ttk.Entry"),
             patch("gui.ttk.Button"),
@@ -275,6 +276,7 @@ class PlannerTests(unittest.TestCase):
         with (
             patch("gui.load_tasks", side_effect=error),
             patch("gui.tk.Tk") as mock_tk,
+            patch("gui.ttk.Frame"), 
             patch("gui.ttk.Label"),
             patch("gui.ttk.Entry"),
             patch("gui.ttk.Button"),

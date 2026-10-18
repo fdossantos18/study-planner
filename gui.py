@@ -34,8 +34,11 @@ def main():
     status_label = ttk.Label(window, text="")
     status_label.pack(pady=5)
 
-    title_entry = ttk.Entry(window, width=40)
-    title_entry.pack(padx=20, pady=5)
+    add_frame = ttk.Frame(window)
+    add_frame.pack(fill="x", padx=20, pady=5)
+
+    title_entry = ttk.Entry(add_frame)
+    title_entry.pack(side="left", fill="x", expand=True, padx=(0, 8))
 
     def on_add_task():
         nonlocal next_task_id
@@ -58,11 +61,11 @@ def main():
 
 
     add_button = ttk.Button(
-        window, 
+        add_frame,
         text="Add Task",
         command=on_add_task,
     )
-    add_button.pack(pady=5)
+    add_button.pack(side="left")
 
     try:
         tasks = load_tasks()
@@ -94,15 +97,33 @@ def main():
     visible_tasks = []
     next_task_id = max((task["id"] for task in tasks), default=0) + 1
 
-    filter_var = tk.StringVar(value="All")
+    # Dropdown Creation 
+    view_frame = ttk.Frame(window)
+    view_frame.pack(fill="x", padx=20, pady=5)
 
+    ttk.Label(view_frame, text="Show:").pack(side="left", padx=(0, 5))
+
+    filter_var = tk.StringVar(value="All")
     filter_dropdown = ttk.Combobox(
-        window, 
+        view_frame,
         textvariable=filter_var,
         values=("All", "Pending", "Completed"),
         state="readonly",
+        width=12,
     )
-    filter_dropdown.pack(pady=5)
+    filter_dropdown.pack(side="left", padx=(0, 15))
+
+    ttk.Label(view_frame, text="Sort:").pack(side="left", padx=(0, 5))
+
+    sort_var = tk.StringVar(value="Original order")
+    sort_dropdown = ttk.Combobox(
+        view_frame,
+        textvariable=sort_var,
+        values=("Original order", "Title A-Z"),
+        state="readonly",
+        width=16,
+    )
+    sort_dropdown.pack(side="left")
 
 
     # Search tasks
@@ -113,20 +134,23 @@ def main():
     search_entry.pack(padx=20, pady=5)
 
 
-    # Sort Dropdown
-    sort_var = tk.StringVar(value="Original order")
-
-    sort_dropdown = ttk.Combobox(
-        window,
-        textvariable=sort_var,
-        values=("Original order", "Title A-Z"),
-        state="readonly",
-    )
-    sort_dropdown.pack(pady=5)
-
     # Listbox
-    task_list = tk.Listbox(window, width=60, height=10)
-    task_list.pack(padx=20, pady=10, fill="both", expand=True)
+    list_frame = ttk.Frame(window)
+    list_frame.pack(padx=20, pady=10, fill="both", expand=True)
+
+    task_list = tk.Listbox(list_frame, width=60, height=10)
+
+    scrollbar = ttk.Scrollbar(
+        list_frame,
+        orient="vertical",
+        command=task_list.yview,
+    )
+    scrollbar.pack(side="right", fill="y")
+
+    task_list.pack(side="left", fill="both", expand=True)
+    task_list.config(yscrollcommand=scrollbar.set)
+
+
 
     def refresh_task_list():
         nonlocal visible_tasks
@@ -182,6 +206,10 @@ def main():
     filter_dropdown.bind("<<ComboboxSelected>>", on_filter_changed)
 
 
+    actions_frame = ttk.Frame(window)
+    actions_frame.pack(padx=20, pady=5)
+
+
     def on_complete_task():
         selection = task_list.curselection()
 
@@ -211,11 +239,12 @@ def main():
         
     # Create button 
     complete_button = ttk.Button(
-        window, 
-        text="Complete Selected",
+        actions_frame, 
+        text="Complete",
         command=on_complete_task,
     )
-    complete_button.pack(pady=5)
+    complete_button.pack(side="left", padx=4)
+
 
     def on_mark_pending():
         selection = task_list.curselection()
@@ -246,11 +275,11 @@ def main():
 
     # Create button -> mark pending 
     pending_button = ttk.Button(
-        window,
+        actions_frame,
         text="Mark Pending",
         command=on_mark_pending,
     )
-    pending_button.pack(pady=5)
+    pending_button.pack(side="left", padx=4)
 
 
     def on_rename_task():
@@ -287,11 +316,11 @@ def main():
 
     # Create rename button
     rename_button = ttk.Button(
-        window,
-        text="Rename Selected",
+        actions_frame,
+        text="Rename",
         command=on_rename_task,
     )
-    rename_button.pack(pady=5)
+    rename_button.pack(side="left", padx=4)
 
 
     def on_undo_status():
@@ -311,11 +340,11 @@ def main():
 
     # Create Undo button
     undo_button = ttk.Button(
-        window,
-        text="Undo Status Change",
+        actions_frame,
+        text="Undo Status",
         command=on_undo_status,
     )
-    undo_button.pack(pady=5)
+    undo_button.pack(side="left", padx=4)
 
 
     def on_sort_changed(event):
