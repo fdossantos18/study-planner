@@ -49,11 +49,12 @@ def main():
         # print(f"You entered: {title}")
         add_task(tasks, next_task_id, title)
         next_task_id += 1
-        save_tasks(tasks)
-        refresh_task_list()
 
+        refresh_task_list()
         title_entry.delete(0, tk.END)
-        status_label.config(text="Task added!")
+
+        if try_save_tasks(): 
+            status_label.config(text="Task added and saved!")
 
 
     add_button = ttk.Button(
@@ -202,9 +203,10 @@ def main():
 
         if complete_task(tasks, selected_task["id"]):
             undo_stack.append(change)
-            save_tasks(tasks)
             refresh_task_list()
-            status_label.config(text="Task completed!")
+
+            if try_save_tasks():
+                status_label.config(text="Task completed and saved!")
 
         
     # Create button 
@@ -236,9 +238,10 @@ def main():
 
         if set_task_completed(tasks, selected_task["id"], False):
             undo_stack.append(change)
-            save_tasks(tasks)
             refresh_task_list()
-            status_label.config(text="Task marked pending!")
+
+            if try_save_tasks():
+                status_label.config(text="Task marked pending and saved!")
 
 
     # Create button -> mark pending 
@@ -276,9 +279,10 @@ def main():
             return 
 
         if rename_task(tasks, selected_task["id"], new_title):
-            save_tasks(tasks)
             refresh_task_list()
-            status_label.config(text="Task renamed!")
+
+            if try_save_tasks():
+                status_label.config(text="Task renamed and saved!")
 
 
     # Create rename button
@@ -296,9 +300,10 @@ def main():
             return 
 
         if undo_status_change(tasks, undo_stack):
-            save_tasks(tasks)
             refresh_task_list()
-            status_label.config(text="Last status change undone.")
+
+            if try_save_tasks():
+                status_label.config(text="Last status change undone and saved.")
             
         else:
             status_label.config(text="Could not find the task to undo.")
@@ -317,6 +322,37 @@ def main():
         refresh_task_list()
     
     sort_dropdown.bind("<<ComboboxSelected>>", on_sort_changed)
+
+
+    def try_save_tasks():
+        try:
+            save_tasks(tasks)
+        except OSError as error:
+            status_label.config(text="Changes have not been saved.")
+            messagebox.showerror(
+                "Could not save tasks",
+                f"Saving failed:\n{error}\n\n"
+                "Your latest changes are still in memory. "
+                "Keep the app open until you can retry saving.",
+                parent=window,
+            )
+            return False
+
+        return True
+
+
+    def on_retry_save():
+        if try_save_tasks():
+            status_label.config(text="All changes saved.")
+
+
+    # Retry Button
+    retry_button = ttk.Button(
+        window,
+        text="Retry Save",
+        command=on_retry_save,
+    )
+    retry_button.pack(pady=5)
 
 
 
