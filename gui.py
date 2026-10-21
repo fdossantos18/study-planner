@@ -13,6 +13,9 @@ from planner import (
     undo_status_change, 
     get_task_summary, 
     sort_tasks_by_title,
+    get_ready_tasks,
+    add_prerequisite,
+    remove_prerequisite,
 )
 
 def main():
@@ -94,6 +97,7 @@ def main():
         return
 
     undo_stack = []
+    prerequisites = {}
     visible_tasks = []
     next_task_id = max((task["id"] for task in tasks), default=0) + 1
 
@@ -107,7 +111,7 @@ def main():
     filter_dropdown = ttk.Combobox(
         view_frame,
         textvariable=filter_var,
-        values=("All", "Pending", "Completed"),
+        values=("All", "Pending", "Completed", "Ready"),
         state="readonly",
         width=12,
     )
@@ -140,6 +144,7 @@ def main():
 
     task_list = tk.Listbox(list_frame, width=60, height=10)
 
+    # Scrollbar
     scrollbar = ttk.Scrollbar(
         list_frame,
         orient="vertical",
@@ -149,6 +154,45 @@ def main():
 
     task_list.pack(side="left", fill="both", expand=True)
     task_list.config(yscrollcommand=scrollbar.set)
+
+
+    # Show Prerequisite
+    prerequisites_label = ttk.Label(
+        window,
+        text="Select a task to view its prerequisites.",
+        wraplength=450,
+    )
+    prerequisites_label.pack(fill="x", padx=20, pady=5)
+
+
+    def on_task_selected(event=None):
+        selection = task_list.curselection()
+
+        if not selection:
+            prerequisites_label.config(
+                text="Select a task to view its prerequisites."
+            )
+            return
+
+        selected_task = visible_tasks[selection[0]]
+        required_ids = prerequisites.get(selected_task["id"], [])
+
+        if not required_ids:
+            prerequisites_label.config(text="Requires: None")
+            return
+
+        tasks_by_id = {task["id"]: task for task in tasks}
+
+        descriptions = [
+            f"{task_id}. {tasks_by_id[task_id]['title']}"
+            for task_id in required_ids
+        ]
+
+        prerequisites_label.config(
+            text="Requires: " + ", ".join(descriptions)
+        )
+
+    task_list.bind("<<ListboxSelect>>", on_task_selected)
 
 
 
@@ -167,8 +211,11 @@ def main():
             visible_tasks = tasks.copy()
         elif selected_filter == "Pending":
             visible_tasks = filter_tasks(tasks, False)
+        elif selected_filter == "Ready":
+            visible_tasks = get_ready_tasks(tasks, prerequisites)
         else:
             visible_tasks = filter_tasks(tasks, True)
+
 
         query = search_entry.get()
         visible_tasks = search_tasks(visible_tasks, query) 
@@ -177,6 +224,10 @@ def main():
             visible_tasks = sort_tasks_by_title(visible_tasks)
 
         task_list.delete(0, tk.END)
+
+        prerequisites_label.config(
+            text="Select a task to view its prerequisites."
+        )
 
         for task in visible_tasks:
             task_id = task["id"]
@@ -321,6 +372,107 @@ def main():
         command=on_rename_task,
     )
     rename_button.pack(side="left", padx=4)
+
+
+
+    def on_add_prerequisite():
+        selection = task_list.curselection()
+
+        if not selection:
+            status_label.config(text="Please select a task.")
+            return
+
+        selected_task = visible_tasks[selection[0]]
+
+        prerequisite_id = simpledialog.askinteger(
+            "Add prerequisite",
+            f"Enter the ID of a task required before "
+            f"'{selected_task['title']}':",
+            minvalue=1,
+            parent=window,
+        )
+
+        if prerequisite_id is None:
+            return
+
+        if not any(task["id"] == prerequisite_id for task in tasks):
+            status_label.config(text="No task has that ID.")
+            return
+
+        try:
+            added = add_prerequisite(
+                prerequisites,
+                selected_task["id"],
+                prerequisite_id,
+            )
+        except ValueError as error:
+            status_label.config(text=str(error))
+            return
+
+        if not added:
+            status_label.config(text="That prerequisite already exists.")
+            return
+
+        refresh_task_list()
+        status_label.config(
+            text="Prerequisite added for this session."
+        )
+
+    # Button Add Prerequisite
+    prerequisite_button = ttk.Button(
+        window,
+        text="Add Prerequisite",
+        command=on_add_prerequisite,
+    )
+    prerequisite_button.pack(pady=5)
+
+
+    def on_remove_prerequisite():
+        selection = task_list.curselection()
+
+        if not selection:
+            status_label.config(text="Please select a task.")
+            return
+
+        selected_task = visible_tasks[selection[0]]
+
+        prerequisite_id = simpledialog.askinteger(
+            "Remove prerequisite",
+            f"Enter the prerequisite ID to remove from "
+            f"'{selected_task['title']}':",
+            minvalue=1,
+            parent=window,
+        )
+
+        if prerequisite_id is None:
+            return
+
+        removed = remove_prerequisite(
+            prerequisites,
+            selected_task["id"],
+            prerequisite_id,
+        )
+
+        if not removed:
+            status_label.config(
+                text="That prerequisite relationship does not exist."
+            )
+            return
+
+        refresh_task_list()
+        status_label.config(
+            text="Prerequisite removed for this session."
+        )
+
+
+    # Button Remove Prerequisite
+    remove_prerequisite_button = ttk.Button(
+        window,
+        text="Remove Prerequisite",
+        command=on_remove_prerequisite,
+    )
+    remove_prerequisite_button.pack(pady=5)
+
 
 
     def on_undo_status():

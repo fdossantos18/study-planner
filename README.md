@@ -53,3 +53,14 @@ The app starts with an empty list when that file does not exist.
 - Event-driven programming with callbacks.
 - Automated testing.
 - Git branches, commits, and pull requests.
+
+
+### Task prerequisites
+
+- Add or remove prerequisites using task IDs.
+- View the selected task's prerequisites.
+- Use the Ready filter to show pending tasks whose prerequisites are completed.
+- Self-dependencies and circular dependencies are rejected.
+
+Prerequisite relationships currently last only for the open app session.
+They are not saved when the app closes.

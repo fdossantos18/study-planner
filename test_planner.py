@@ -17,6 +17,10 @@ from planner import (
     validate_tasks,
     sort_tasks_by_title,
     save_tasks,
+    get_ready_tasks,
+    depends_on,
+    add_prerequisite,
+    remove_prerequisite,
 )
 
 
@@ -365,8 +369,184 @@ class PlannerTests(unittest.TestCase):
             )
 
 
-# Run it from terminal below: python -m unittest -v
 
+    def test_get_ready_tasks_requires_completed_prerequisites(self):
+        tasks = [
+            {"id": 1, "title": "Arrays", "completed": True},
+            {"id": 2, "title": "Binary search", "completed": False},
+            {"id": 3, "title": "Sorting", "completed": True},
+            {"id": 4, "title": "Binary search on answer", "completed": False},
+        ]
+        prerequisites = {
+            1: [],
+            2: [1],
+            3: [1],
+            4: [2],
+        }
+
+        result = get_ready_tasks(tasks, prerequisites)
+
+        ready_ids = [task["id"] for task in result]
+        self.assertEqual(ready_ids, [2])
+
+
+
+    def test_get_ready_tasks_waits_for_all_prerequisites(self):
+        tasks = [
+            {"id": 1, "title": "Arrays", "completed": True},
+            {"id": 2, "title": "Sorting", "completed": False},
+            {"id": 3, "title": "Two pointers", "completed": False},
+        ]
+        prerequisites = {
+            1: [],
+            2: [],
+            3: [1, 2],
+        }
+
+        result = get_ready_tasks(tasks, prerequisites)
+
+        ready_ids = [task["id"] for task in result]
+        self.assertEqual(ready_ids, [2])
+
+
+        set_task_completed(tasks, 2, True)
+
+        result = get_ready_tasks(tasks, prerequisites)
+
+        ready_ids = [task["id"] for task in result]
+        self.assertEqual(ready_ids, [3])
+
+
+
+    def test_get_ready_tasks_without_prerequisite_entry(self):
+        tasks = [
+            {"id": 7, "title": "Practice graphs", "completed": False},
+        ]
+        prerequisites = {}
+
+        result = get_ready_tasks(tasks, prerequisites)
+
+        ready_ids = [task["id"] for task in result]
+        self.assertEqual(ready_ids, [7])
+
+
+
+    def test_depends_on_follows_indirect_dependencies(self):
+        prerequisites = {
+            1: [],
+            2: [1],
+            3: [2],
+        }
+
+        result = depends_on(prerequisites, 3, 1)
+
+        self.assertTrue(result)
+
+
+
+    def test_depends_on_returns_false_when_target_is_unreachable(self):
+        prerequisites = {
+            1: [],
+            2: [1],
+            3: [2],
+        }
+
+        result = depends_on(prerequisites, 1, 3)
+
+        self.assertFalse(result)
+
+
+
+    def test_add_prerequisite_rejects_cycle_without_changing_graph(self):
+        prerequisites = {
+            1: [],
+            2: [1],
+            3: [2],
+        }
+
+        with self.assertRaisesRegex(ValueError, "create a cycle"):
+            add_prerequisite(prerequisites, 1, 3)
+
+        self.assertEqual(
+            prerequisites,
+            {
+                1: [],
+                2: [1],
+                3: [2],
+            },
+        )
+
+
+
+    def test_add_prerequisite_adds_relationship_only_once(self):
+        prerequisites = {
+            1: [],
+        }
+
+        result = add_prerequisite(prerequisites, 2, 1)
+
+        self.assertTrue(result)
+        self.assertEqual(
+            prerequisites,
+            {
+                1: [],
+                2: [1],
+            },
+        )
+
+        repeated_result = add_prerequisite(prerequisites, 2, 1)
+
+        self.assertFalse(repeated_result)
+        self.assertEqual(prerequisites[2], [1])
+
+
+
+    def test_remove_prerequisite_preserves_other_relationships(self):
+        prerequisites = {
+            1: [],
+            2: [],
+            3: [],
+            4: [1, 2, 3],
+        }
+
+        result = remove_prerequisite(prerequisites, 4, 2)
+
+        self.assertTrue(result)
+        self.assertEqual(
+            prerequisites,
+            {
+                1: [],
+                2: [],
+                3: [],
+                4: [1, 3],
+            },
+        )
+
+
+    def test_remove_missing_prerequisite_leaves_graph_unchanged(self):
+        prerequisites = {
+            1: [],
+            2: [],
+            3: [1],
+        }
+
+        result = remove_prerequisite(prerequisites, 3, 2)
+
+        self.assertFalse(result)
+        self.assertEqual(
+            prerequisites,
+            {
+                1: [],
+                2: [],
+                3: [1],
+            },
+        )
+
+
+
+
+
+# Run it from terminal below: python -m unittest -v
 if __name__ == "__main__":
     unittest.main()
 
