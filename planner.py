@@ -182,8 +182,69 @@ def sort_tasks_by_title(tasks):
 
     return sorted(tasks, key=title_key) 
 
+
+def get_ready_tasks(tasks, prerequisites):
+    completed_ids = set()
+
+    for task in tasks:
+        if task["completed"]:
+            completed_ids.add(task["id"])
+
+    ready_tasks = []
+
+    for task in tasks:
+        if task["completed"]:
+            continue 
+
+        required_ids = prerequisites.get(task["id"], [])
+
+        if all(required_id in completed_ids for required_id in required_ids):
+            ready_tasks.append(task)
+
+    return ready_tasks
+
+
+def depends_on(prerequisites, start_id, target_id):
+    stack = [start_id]
+    visited = set()
+
+    while stack:
+        current_id = stack.pop()
+
+        if current_id == target_id:
+            return True 
+
+        if current_id in visited:
+            continue 
+
+        visited.add(current_id)
+        stack.extend(prerequisites.get(current_id, []))
+
+    return False 
+
+
+def add_prerequisite(prerequisites, task_id, prerequisite_id):
+    if depends_on(prerequisites, prerequisite_id, task_id):
+        raise ValueError("This prerequisite would create a cycle.")
+
+    required_ids = prerequisites.setdefault(task_id, [])
+
+    if prerequisite_id in required_ids:
+        return False
+
+    required_ids.append(prerequisite_id)
+    return True
     
 
+
+def remove_prerequisite(prerequisites, task_id, prerequisite_id):
+    required_ids = prerequisites.get(task_id, [])
+    
+    if prerequisite_id not in required_ids:
+        return False
+
+    required_ids.remove(prerequisite_id)
+    return True
 
 
 
